@@ -1,7 +1,6 @@
-
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -47,6 +46,8 @@ const fetchUsers = async (): Promise<User[]> => {
 const EditPost = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
   const [formData, setFormData] = useState<PostData>({
     title: "",
     body: "",
@@ -92,7 +93,7 @@ const EditPost = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.title.trim() || !formData.body.trim()) {
       toast.error("Please fill in all required fields");
       return;
@@ -117,14 +118,15 @@ const EditPost = () => {
       }
 
       const updatedPost = await response.json();
-      console.log("Updated post:", updatedPost);
-      
+
+      // 🔄 Simulate post update by updating React Query cache
+      queryClient.setQueryData(["post", id], updatedPost);
+
       toast.success("Post updated successfully!", {
         description: "Your changes have been saved.",
       });
-      
-      // Redirect to the post detail page
-      navigate(`/posts/${id}`);
+
+      navigate(`/posts/${id}`, { state: { updatedPost } });
     } catch (error) {
       console.error("Error updating post:", error);
       toast.error("Failed to update post", {
@@ -151,13 +153,11 @@ const EditPost = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* Back Button */}
       <Link to={`/posts/${id}`} className="inline-flex items-center text-blue-600 hover:text-blue-800 mb-6 transition-colors">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Back to Post
       </Link>
 
-      {/* Header */}
       <div className="text-center mb-8">
         <div className="flex items-center justify-center mb-4">
           <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center">
@@ -170,7 +170,6 @@ const EditPost = () => {
         <p className="text-gray-600">Update your post content</p>
       </div>
 
-      {/* Form */}
       <Card className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-xl">
         <CardHeader>
           <CardTitle className="text-xl font-semibold text-gray-800">Post Details</CardTitle>
@@ -178,26 +177,17 @@ const EditPost = () => {
         <CardContent>
           {postLoading ? (
             <div className="space-y-6">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-32 w-full" />
-              </div>
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-32 w-full" />
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Title Field */}
               <div className="space-y-2">
-                <Label htmlFor="title" className="text-sm font-medium text-gray-700">
-                  Title *
-                </Label>
+                <Label htmlFor="title" className="text-sm font-medium text-gray-700">Title *</Label>
                 <Input
                   id="title"
                   name="title"
@@ -210,11 +200,8 @@ const EditPost = () => {
                 />
               </div>
 
-              {/* Author Selection */}
               <div className="space-y-2">
-                <Label htmlFor="userId" className="text-sm font-medium text-gray-700">
-                  Author *
-                </Label>
+                <Label htmlFor="userId" className="text-sm font-medium text-gray-700">Author *</Label>
                 <Select value={formData.userId.toString()} onValueChange={handleUserChange}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select an author" />
@@ -233,11 +220,8 @@ const EditPost = () => {
                 </Select>
               </div>
 
-              {/* Body Field */}
               <div className="space-y-2">
-                <Label htmlFor="body" className="text-sm font-medium text-gray-700">
-                  Content *
-                </Label>
+                <Label htmlFor="body" className="text-sm font-medium text-gray-700">Content *</Label>
                 <Textarea
                   id="body"
                   name="body"
@@ -247,33 +231,23 @@ const EditPost = () => {
                   className="w-full min-h-[200px] resize-none"
                   required
                 />
-                <p className="text-xs text-gray-500">
-                  {formData.body.length} characters
-                </p>
+                <p className="text-xs text-gray-500">{formData.body.length} characters</p>
               </div>
 
-              {/* Preview Section */}
               {(formData.title || formData.body) && (
                 <div className="border-t border-gray-200 pt-6">
-                  <Label className="text-sm font-medium text-gray-700 mb-3 block">
-                    Preview
-                  </Label>
+                  <Label className="text-sm font-medium text-gray-700 mb-3 block">Preview</Label>
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                     {formData.title && (
-                      <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                        {formData.title}
-                      </h3>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-2">{formData.title}</h3>
                     )}
                     {formData.body && (
-                      <p className="text-gray-600 whitespace-pre-wrap">
-                        {formData.body}
-                      </p>
+                      <p className="text-gray-600 whitespace-pre-wrap">{formData.body}</p>
                     )}
                   </div>
                 </div>
               )}
 
-              {/* Submit Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
                 <Button
                   type="submit"

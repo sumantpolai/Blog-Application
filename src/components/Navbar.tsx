@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate,useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Menu, LogOut, Sparkles } from "lucide-react";
@@ -12,6 +12,13 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
+
+  const location = useLocation();
+const queryParams = new URLSearchParams(location.search);
+const searchParam = queryParams.get("search") || "";
+
+
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
